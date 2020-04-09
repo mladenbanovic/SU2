@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -81,7 +81,7 @@ public:
                                           const su2double velExchange,
                                           const su2double muExchange,
                                           const su2double pExchange,
-                                          const su2double Wall_HeatFlux, 
+                                          const su2double Wall_HeatFlux,
                                           const bool      HeatFlux_Prescribed,
                                           const su2double TWall,
                                           const bool      Temperature_Prescribed,
@@ -90,12 +90,22 @@ public:
                                           su2double       &qWall,
                                           su2double       &ViscosityWall,
                                           su2double       &kOverCvWall);
+  /*!
+   * \brief Virtual function, which updates the wall model exchange location.
+   * \param[in]  h_wm_new              - Updated exchanged location
+   */
+  virtual void UpdateExchangeLocation(const su2double h_wm_new);
+
 protected:
 
-  su2double h_wm;    /*!< \brief The thickness of the wall model. This is also basically the exchange location */
   su2double Pr_lam;  /*!< \brief Laminar Prandtl number. */
   su2double Pr_turb; /*!< \brief Turbulent Prandtl number. */
   su2double karman;  /*!< \brief von Karman constant. */
+  su2double RGas;    /*!< \brief Dimensional Gas Constant. */
+  su2double Gamma;   /*!< \brief Ratio of specific heat. */
+  su2double Cp;      /*!< \brief Specific heat at total pressure. */
+  su2double Cv;      /*!< \brief Specific heat at total volume. */
+  su2double Pref, Tref, Uref; /*!< \brief Pressure, Temperature and Velocity references. */
 
 private:
   /*!
@@ -154,8 +164,15 @@ public:
                                   su2double       &ViscosityWall,
                                   su2double       &kOverCvWall);
 
+ /*!
+  * \brief Updates the wall model exchange location.
+  * \param[in]  h_wm_new              - Updated exchanged location
+  */
+  void UpdateExchangeLocation(const su2double h_wm_new);
+
 private:
 
+  su2double h_wm;    /*!< \brief The thickness of the wall model. This is also basically the exchange location */
   su2double expansionRatio;   /*!< \brief  Stretching factor used for the wall model grid. */
   int       numPoints;        /*!< \brief  Number of points used in the wall model grid. */
 
@@ -169,9 +186,9 @@ private:
 };
 
 class CWallModelLogLaw : public CWallModel {
-  
+
 public:
-  
+
   /*!
    * \brief Constructor of the class, which initializes the object.
    * \param[in] config     - Definition of the particular problem.
@@ -180,12 +197,12 @@ public:
    */
   CWallModelLogLaw(CConfig      *config,
                    const string &Marker_Tag);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   ~CWallModelLogLaw(void);
-  
+
   /*!
    * \brief Function, which computes the wall shear stress and heat flux
    from the data at the exchange location.
@@ -217,10 +234,17 @@ public:
                                   su2double       &qWall,
                                   su2double       &ViscosityWall,
                                   su2double       &kOverCvWall);
-  
+
+ /*!
+  * \brief Updates the wall model exchange location.
+  * \param[in]  h_wm_new              - Updated exchanged location
+  */
+  void UpdateExchangeLocation(const su2double h_wm_new);
+
 private:
 
   su2double C;  /*!< \brief Constant to match the Reichardt BL profile. */
+  su2double h_wm;    /*!< \brief The thickness of the wall model. This is also basically the exchange location */
 
   /*!
    * \brief Default constructor of the class, disabled.
