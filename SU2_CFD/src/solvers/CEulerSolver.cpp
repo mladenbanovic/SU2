@@ -975,6 +975,42 @@ CEulerSolver::~CEulerSolver(void) {
     delete [] CkOutflow2;
   }
 
+  if (TauWall_WMLES != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      delete [] TauWall_WMLES[iMarker];
+    }
+    delete [] TauWall_WMLES;
+  }
+
+  if (HeatFlux_WMLES != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      delete [] HeatFlux_WMLES[iMarker];
+    }
+    delete [] HeatFlux_WMLES;
+  }
+
+  if (FlowDirTan_WMLES != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      if (FlowDirTan_WMLES[iMarker] != NULL) {
+        for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
+          delete [] FlowDirTan_WMLES[iMarker][iVertex];
+        delete [] FlowDirTan_WMLES[iMarker];
+      }
+    }
+    delete [] FlowDirTan_WMLES;
+  }
+
+  if (VelTimeFilter_WMLES != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      if (VelTimeFilter_WMLES[iMarker] != NULL) {
+        for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
+          delete [] VelTimeFilter_WMLES[iMarker][iVertex];
+        delete [] VelTimeFilter_WMLES[iMarker];
+      }
+    }
+    delete [] VelTimeFilter_WMLES;
+  }
+
   delete nodes;
 }
 

@@ -3239,6 +3239,40 @@ public:
 
   /*!
    * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the shear stress from the wall model.
+   */
+  inline virtual su2double GetTauWall_WMLES(unsigned short val_marker, unsigned long val_vertex) const { return 0;}
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the heat flux from the wall model.
+   */
+  inline virtual su2double GetHeatFlux_WMLES(unsigned short val_marker, unsigned long val_vertex) const {return 0;}
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \param[in] val_idim   - Dimension
+   * \return Value of the unit tangent vector.
+   */
+  inline virtual su2double GetFlowDirTan_WMLES(unsigned short val_marker, unsigned long val_vertex, unsigned long val_idim) const { return 0;}
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \param[in] val_idim   - Dimension
+   * \return Value of the time filtered velocity vector.
+   */
+  inline virtual su2double GetVelTimeFilter_WMLES(unsigned short val_marker, unsigned long val_vertex, unsigned long val_idim) const { return 0;}
+
+  /*!
+   * \brief A virtual member.
    * \return Value of the StrainMag_Max
    */
   inline virtual su2double GetStrainMag_Max(void) const { return 0; }
@@ -4208,6 +4242,19 @@ public:
   inline virtual void Setmut_LES(CGeometry *geometry,
                                     CSolver** solver_container,
                                     CConfig* config) { }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   */
+
+  inline virtual void SetTauWallHeatFlux_WMLES1stPoint(CGeometry *geometry,
+                                                  CSolver **solver_container,
+                                                  CConfig *config,
+                                                  unsigned short iRKStep) { }
 
   /*!
    * \brief A virtual member.
