@@ -414,12 +414,12 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
   }
 
   // Wall functions
-  if(config->GetWall_Functions()){
+  if(config->GetWall_Functions()||config->GetWall_Models()){
     AddVolumeOutput("TAU_WALL", "Tau_wall", "WALL_FUNCTION", "Shear stress at the wall as predicted by the wall function");
   }
 
   if (config->GetTime_Domain()){
-    SetTimeAveragedFields();
+    SetTimeAveragedFields(config);
   }
 }
 
@@ -567,12 +567,12 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
     SetVolumeOutputValue("VORTICITY_Z", iPoint, Node_Flow->GetVorticity(iPoint)[2]);
   }
 
-  if(config->GetWall_Functions()){
+  if(config->GetWall_Functions() || config->GetWall_Models()){
     SetVolumeOutputValue("TAU_WALL", iPoint, Node_Flow->GetTauWall(iPoint));
   }
 
   if (config->GetTime_Domain()){
-    LoadTimeAveragedData(iPoint, Node_Flow);
+    LoadTimeAveragedData(iPoint, Node_Flow, config);
   }
 }
 
