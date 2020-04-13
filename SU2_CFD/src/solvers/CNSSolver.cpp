@@ -122,18 +122,16 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   Tke_Inf         = config->GetTke_FreeStreamND();
 
 
-  /*--- Set the SGS model in case an LES simulation is carried out ---*/
-  /* Make a distinction between the SGS models used and set SGSModel and
-  SGSModelUsed accordingly. */
+  /*--- Set the SGS model in case an LES simulation is carried out.
+   Make a distinction between the SGS models used and set SGSModel and
+  SGSModelUsed accordingly. ---*/
+
+  SGSModel = NULL;
+  SGSModelUsed = false;
 
   switch( config->GetKind_SGS_Model() ) {
     /* No LES, so no SGS model needed.
      Set the pointer to NULL and the boolean to false. */
-    case NO_SGS_MODEL:
-    case IMPLICIT_LES:
-     SGSModel     = NULL;
-     SGSModelUsed = false;
-     break;
     case SMAGORINSKY:
       SGSModel     = new CSmagorinskyModel;
       SGSModelUsed = true;
@@ -150,10 +148,13 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
       SU2_MPI::Error("Unknown SGS model encountered", CURRENT_FUNCTION);
   }
 
-  /*--- Set the Wall Model in case of a LES  ---*/
+  /*--- Set the wall model to NULL ---*/
+
+  WallModel = NULL;
 
   if (config->GetWall_Models()){
 
+    /*--- Set the WMLES class  ---*/
     /*--- First allocate the auxiliary variables ---*/
 
     Alloc2D(nMarker, nVertex, TauWall_WMLES);
@@ -196,7 +197,6 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
             WallModel = new CWallModelLogLaw(config,WallFunctionsMarker_[0]);
             break;
           default:
-            WallModel = NULL;
             break;
         }
       }
@@ -465,7 +465,7 @@ void CNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolv
   /*--- Wall shear stress values (wall functions) ---*/
 
   numerics->SetTauWall(nodes->GetTauWall(iPoint),
-                       nodes->GetTauWall(iPoint));
+                       nodes->GetTauWall(jPoint));
 
   numerics->SetTauWall_Flag(nodes->GetTauWall_Flag(iPoint),
                             nodes->GetTauWall_Flag(jPoint));
