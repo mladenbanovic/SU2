@@ -2670,10 +2670,7 @@ void CNSSolver::SetTauWallHeatFlux_WMLES1stPoint(CGeometry *geometry, CSolver **
   su2double Vel[3], VelNormal, VelTang[3], VelTangMod, WallDist[3], WallDistMod;
   su2double T_Normal, P_Normal, mu_Normal;
   su2double *Coord, *Coord_Normal, UnitNormal[3], *Normal, Area;
-
-  su2double TimeStep  = config->GetDelta_UnstTimeND();
-  su2double FilterAmp = 0.001;
-  su2double TimeFilter = FilterAmp;
+  su2double TimeFilter = config->GetDelta_UnstTimeND()/ (config->GetTimeFilter_WMLES() / config->GetTime_Ref());
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
@@ -2760,7 +2757,7 @@ void CNSSolver::SetTauWallHeatFlux_WMLES1stPoint(CGeometry *geometry, CSolver **
 
        /*--- Filter the input LES velocity (implement here)---*/
 
-       unsigned long curAbsTimeIter = (config->GetTimeIter() - config->GetRestart_Iter());
+       long curAbsTimeIter = (config->GetTimeIter() - config->GetRestart_Iter());
        if (curAbsTimeIter > 0){
 
          /*--- Old input LES velocity ---*/

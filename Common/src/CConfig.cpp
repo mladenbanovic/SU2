@@ -2728,6 +2728,9 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: DES Constant */
   addDoubleOption("DES_CONST", Const_DES, 0.65);
 
+  /* DESCRIPTION: DES Constant */
+  addDoubleOption("TIMEFILTER_WMLES", TimeFilter_WMLES, 1.0);
+
   /* DESCRIPTION: Specify Hybrid RANS/LES model */
   addEnumOption("HYBRID_RANSLES", Kind_HybridRANSLES, HybridRANSLES_Map, NO_HYBRIDRANSLES);
 

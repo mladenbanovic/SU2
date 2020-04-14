@@ -1011,6 +1011,7 @@ private:
   FullTape;                              /*!< \brief Full tape mode for coupled discrete adjoints. */
   unsigned long Wrt_Surf_Freq_DualTime;  /*!< \brief Writing surface solution frequency for Dual Time. */
   su2double Const_DES;                 /*!< \brief Detached Eddy Simulation Constant. */
+  su2double TimeFilter_WMLES;          /*!< \brief WMLES Time Filter value. */
   unsigned short Kind_WindowFct;       /*!< \brief Type of window (weight) function for objective functional. */
   unsigned short Kind_HybridRANSLES;   /*!< \brief Kind of Hybrid RANS/LES. */
   unsigned short Kind_RoeLowDiss;      /*!< \brief Kind of Roe scheme with low dissipation for unsteady flows. */
@@ -8900,6 +8901,12 @@ public:
    * \return Value of DES constant.
    */
   su2double GetConst_DES(void) const { return Const_DES; }
+
+  /*!
+   * \brief Get the WMLES time filter value
+   * \return Value of the WMLES time filter.
+   */
+  su2double GetTimeFilter_WMLES(void) const { return TimeFilter_WMLES; }
 
   /*!
    * \brief Get QCR (SA-QCR2000).
