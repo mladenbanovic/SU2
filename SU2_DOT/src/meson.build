@@ -1,4 +1,5 @@
-su2_dot_src = ['SU2_DOT.cpp']
+su2_dot_src = files(['SU2_DOT.cpp',
+                     'CGradientProjection.cpp'])
 if get_option('enable-normal')
   su2_cfd_obj = su2_cfd.extract_objects(['solvers/CSolver.cpp',
                                          'solvers/CBaselineSolver.cpp',
@@ -33,12 +34,13 @@ if get_option('enable-normal')
                       install: true,
                       dependencies: [su2_deps, common_dep], 
                       objects : su2_cfd_obj,
-                      cpp_args :[default_warning_flags, su2_cpp_args])
+                      cpp_args :['-fPIC'] + [default_warning_flags, su2_cpp_args])
 
 endif
 
 if get_option('enable-autodiff')
-  su2_dot_src_ad = ['SU2_DOT.cpp']
+  su2_dot_src_ad = files(['SU2_DOT.cpp',
+                          'CGradientProjection.cpp'])
   su2_cfd_obj_ad = su2_cfd_ad.extract_objects(['solvers/CSolver.cpp',
                                                'solvers/CBaselineSolver.cpp',
                                                'CMarkerProfileReaderFVM.cpp',
@@ -72,6 +74,6 @@ if get_option('enable-autodiff')
                           install: true,
                           dependencies: [su2_deps, codi_dep, commonAD_dep], 
 		                      objects : su2_cfd_obj_ad,
-		                      cpp_args : [default_warning_flags, su2_cpp_args, codi_rev_args])
+		                      cpp_args : ['-fPIC'] + [default_warning_flags, su2_cpp_args, codi_rev_args])
 
 endif
