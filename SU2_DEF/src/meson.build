@@ -1,4 +1,5 @@
-su2_def_src = ['SU2_DEF.cpp']
+su2_def_src = files(['SU2_DEF.cpp',
+                     'CMeshDeformation.cpp'])
 if get_option('enable-normal')
 
   su2_cfd_obj = su2_cfd.extract_objects(['solvers/CSolver.cpp',
@@ -34,5 +35,5 @@ if get_option('enable-normal')
                         install: true,
                         dependencies: [su2_deps, common_dep], 
                         objects : su2_cfd_obj,
-                        cpp_args :[default_warning_flags, su2_cpp_args])
+                        cpp_args : ['-fPIC'] + [default_warning_flags, su2_cpp_args])
 endif

@@ -43,6 +43,7 @@ threads="1"
 #include "../../SU2_CFD/include/drivers/CMultizoneDriver.hpp"
 #include "../../SU2_CFD/include/drivers/CDiscAdjSinglezoneDriver.hpp"
 #include "../../SU2_DOT/include/CGradientProjection.hpp"
+#include "../../SU2_DEF/include/CMeshDeformation.hpp"
   
 %}
 
@@ -94,3 +95,4 @@ const unsigned int ZONE_1 = 1; /*!< \brief Definition of the first grid domain. 
 %include "../../SU2_CFD/include/drivers/CMultizoneDriver.hpp"
 %include "../../SU2_CFD/include/drivers/CDiscAdjSinglezoneDriver.hpp"
 %include "../../SU2_DOT/include/CGradientProjection.hpp"
+%include "../../SU2_DEF/include/CMeshDeformation.hpp"
