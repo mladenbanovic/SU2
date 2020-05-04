@@ -9,6 +9,55 @@ import os
 import shutil
 
 # -------------------------------------------------------------------
+#  Primal (Objective function(s)) 
+# -------------------------------------------------------------------
+def primal(options, config, mpi_comm):
+  # Initialize the corresponding driver of SU2, this includes solver preprocessing
+  try:
+    SU2Driver = pysu2.CSinglezoneDriver(options.filename, options.nZone, mpi_comm)
+  except TypeError as exception:
+    print('A TypeError occured in pysu2.CDriver : ',exception)
+    if options.with_MPI == True:
+      print('ERROR : You are trying to initialize MPI with a serial build of the wrapper. Please, remove the --parallel option that is incompatible with a serial build.')
+    else:
+      print('ERROR : You are trying to launch a computation without initializing MPI but the wrapper has been built in parallel. Please add the --parallel option in order to initialize MPI for the wrapper.')
+    return
+  
+    # Launch the solver for the entire computation
+  SU2Driver.StartSolver()
+
+  # Postprocess the solver and exit cleanly
+  SU2Driver.Postprocessing()
+
+  if SU2Driver != None:
+    del SU2Driver
+
+  # history filename
+  plot_format = config.get('TABULAR_FORMAT', 'CSV')
+  plot_extension = SU2.io.get_extension(plot_format)
+  history_filename = config['CONV_FILENAME'] + plot_extension
+  
+  # Read the objective values from history file
+  aerodynamics = SU2.io.read_aerodynamics(history_filename, config.NZONES)
+  funcs = SU2.util.ordered_bunch()
+  for key in SU2.io.historyOutFields:
+    if key in aerodynamics:
+      funcs[key] = aerodynamics[key]
+  #print (funcs)
+      
+  def_objs = config['OPT_OBJECTIVE']
+  objectives = def_objs.keys()
+  func_vals_sum = 0.
+  for i_obj,this_obj in enumerate(objectives):
+    scale = def_objs[this_obj]['SCALE']
+    global_factor = float(config['OPT_GRADIENT_FACTOR'])
+    sign  = SU2.io.get_objectiveSign(this_obj)
+    
+    func_vals_sum += funcs[this_obj] * sign * scale * global_factor
+  
+  return func_vals_sum
+
+# -------------------------------------------------------------------
 #  Main 
 # -------------------------------------------------------------------
 
@@ -39,25 +88,26 @@ def main():
     comm = 0 
 
   # PRIMAL
+  primal(options, config, comm)
   # Initialize the corresponding driver of SU2, this includes solver preprocessing
-  try:
-    SU2Driver = pysu2.CSinglezoneDriver(options.filename, options.nZone, comm);
-  except TypeError as exception:
-    print('A TypeError occured in pysu2.CDriver : ',exception)
-    if options.with_MPI == True:
-      print('ERROR : You are trying to initialize MPI with a serial build of the wrapper. Please, remove the --parallel option that is incompatible with a serial build.')
-    else:
-      print('ERROR : You are trying to launch a computation without initializing MPI but the wrapper has been built in parallel. Please add the --parallel option in order to initialize MPI for the wrapper.')
-    return
+#  try:
+#    SU2Driver = pysu2.CSinglezoneDriver(options.filename, options.nZone, comm);
+#  except TypeError as exception:
+#    print('A TypeError occured in pysu2.CDriver : ',exception)
+#    if options.with_MPI == True:
+#      print('ERROR : You are trying to initialize MPI with a serial build of the wrapper. Please, remove the --parallel option that is incompatible with a serial build.')
+#    else:
+#      print('ERROR : You are trying to launch a computation without initializing MPI but the wrapper has been built in parallel. Please add the --parallel option in order to initialize MPI for the wrapper.')
+#    return
 
   # Launch the solver for the entire computation
-  SU2Driver.StartSolver()
+#  SU2Driver.StartSolver()
 
   # Postprocess the solver and exit cleanly
-  SU2Driver.Postprocessing()
+#  SU2Driver.Postprocessing()
 
-  if SU2Driver != None:
-    del SU2Driver
+#  if SU2Driver != None:
+#    del SU2Driver
     
   # ADJOINT
   config['MATH_PROBLEM']  = 'DISCRETE_ADJOINT'
