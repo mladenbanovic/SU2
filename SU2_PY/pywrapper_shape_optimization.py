@@ -58,58 +58,9 @@ def primal(options, config, mpi_comm):
   return func_vals_sum
 
 # -------------------------------------------------------------------
-#  Main 
+#  Adjoint
 # -------------------------------------------------------------------
-
-#### Used for test-case: Tutorials/design/Inviscid_2D_Unconstrained_NACA0012
-
-def main():
-
-  # Command line options
-  parser=OptionParser()
-  parser.add_option("-f", "--file", dest="filename", help="Read config from FILE", metavar="FILE")
-  parser.add_option("--nZone", dest="nZone", default=1, help="Define the number of ZONES", metavar="NZONE")
-  parser.add_option("--parallel", action="store_true",
-                    help="Specify if we need to initialize MPI", dest="with_MPI", default=False)
-
-  (options, args) = parser.parse_args()
-  options.nZone = int( options.nZone )
-
-  if options.filename == None:
-    raise Exception("No config file provided. Use -f flag")
-  
-  # This is a Python implementation of the config file, should be done with pywrapper in the future
-  config = SU2.io.Config(options.filename)
-
-  if options.with_MPI == True:
-    from mpi4py import MPI      # use mpi4py for parallel run (also valid for serial)
-    comm = MPI.COMM_WORLD
-  else:
-    comm = 0 
-
-  # PRIMAL
-  primal(options, config, comm)
-  # Initialize the corresponding driver of SU2, this includes solver preprocessing
-#  try:
-#    SU2Driver = pysu2.CSinglezoneDriver(options.filename, options.nZone, comm);
-#  except TypeError as exception:
-#    print('A TypeError occured in pysu2.CDriver : ',exception)
-#    if options.with_MPI == True:
-#      print('ERROR : You are trying to initialize MPI with a serial build of the wrapper. Please, remove the --parallel option that is incompatible with a serial build.')
-#    else:
-#      print('ERROR : You are trying to launch a computation without initializing MPI but the wrapper has been built in parallel. Please add the --parallel option in order to initialize MPI for the wrapper.')
-#    return
-
-  # Launch the solver for the entire computation
-#  SU2Driver.StartSolver()
-
-  # Postprocess the solver and exit cleanly
-#  SU2Driver.Postprocessing()
-
-#  if SU2Driver != None:
-#    del SU2Driver
-    
-  # ADJOINT
+def adjoint(options, config, mpi_comm):
   config['MATH_PROBLEM']  = 'DISCRETE_ADJOINT'
   
   dumpFilename = 'config_CFD_AD.cfg'
@@ -123,7 +74,7 @@ def main():
   
   # Initialize the corresponding driver of SU2, this includes solver preprocessing
   try:
-    SU2DriverAD = pysu2ad.CDiscAdjSinglezoneDriver(dumpFilename, options.nZone, comm);
+    SU2DriverAD = pysu2ad.CDiscAdjSinglezoneDriver(dumpFilename, options.nZone, mpi_comm);
   except TypeError as exception:
     print('A TypeError occured in pysu2ad.CDriver : ',exception)
     if options.with_MPI == True:
@@ -156,7 +107,7 @@ def main():
     
   # Initialize the corresponding driver of SU2, this includes solver preprocessing
   try:
-    SU2GradientProjectionAD = pysu2ad.CGradientProjection(dumpFilename, comm)
+    SU2GradientProjectionAD = pysu2ad.CGradientProjection(dumpFilename, mpi_comm)
   except TypeError as exception:
     print('A TypeError occured in pysu2ad.CDriver : ',exception)
     if options.with_MPI == True:
@@ -170,9 +121,45 @@ def main():
   # read gradients
   grad_filename  = config.GRAD_OBJFUNC_FILENAME
   raw_gradients = SU2.io.read_gradients(grad_filename)
+  return raw_gradients
+
+# -------------------------------------------------------------------
+#  Main 
+# -------------------------------------------------------------------
+
+#### Used for test-case: Tutorials/design/Inviscid_2D_Unconstrained_NACA0012
+
+def main():
+
+  # Command line options
+  parser=OptionParser()
+  parser.add_option("-f", "--file", dest="filename", help="Read config from FILE", metavar="FILE")
+  parser.add_option("--nZone", dest="nZone", default=1, help="Define the number of ZONES", metavar="NZONE")
+  parser.add_option("--parallel", action="store_true",
+                    help="Specify if we need to initialize MPI", dest="with_MPI", default=False)
+
+  (options, args) = parser.parse_args()
+  options.nZone = int( options.nZone )
+
+  if options.filename == None:
+    raise Exception("No config file provided. Use -f flag")
   
-  #propose update to design variables by using the gradient information
-  #...
+  # This is a Python implementation of the config file, should be done with pywrapper in the future
+  config = SU2.io.Config(options.filename)
+
+  if options.with_MPI == True:
+    from mpi4py import MPI      # use mpi4py for parallel run (also valid for serial)
+    comm = MPI.COMM_WORLD
+  else:
+    comm = 0 
+
+  # PRIMAL
+  objective_values = primal(options, config, comm)
+  
+  gradients = adjoint(options, config, comm)
+  
+  print (objective_values)
+  print (gradients)
 
 # -------------------------------------------------------------------
 #  Run Main Program
