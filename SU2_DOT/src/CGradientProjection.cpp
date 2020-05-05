@@ -700,7 +700,7 @@ void CGradientProjection::SetProjection_AD(CGeometry *geometry, CConfig *config,
     cout  << endl << "Evaluate functional gradient using Algorithmic Differentiation (ZONE " << config->GetiZone() << ")." << endl;
 
   /*--- Start recording of operations ---*/
-
+  AD::Reset();
   AD::StartRecording();
 
   /*--- Register design variables as input and set them to zero
