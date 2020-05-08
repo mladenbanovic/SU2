@@ -121,6 +121,25 @@ def adjoint(options, config, mpi_comm):
   # read gradients
   grad_filename  = config.GRAD_OBJFUNC_FILENAME
   raw_gradients = SU2.io.read_gradients(grad_filename)
+  #print(raw_gradients)
+  
+  #scale gradients according to config
+  ############ ADJOINT SCALING
+  dv_scales = config['DEFINITION_DV']['SCALE']
+  dv_size   = config['DEFINITION_DV']['SIZE']
+  
+  def_objs = config['OPT_OBJECTIVE']
+  this_obj = def_objs.keys()[0]
+  scale = def_objs[this_obj]['SCALE']
+  global_factor = float(config['OPT_GRADIENT_FACTOR'])
+  sign  = SU2.io.get_objectiveSign(this_obj)
+  
+  k = 0
+  for i_dv,dv_scl in enumerate(dv_scales):
+    for i_grd in range(dv_size[i_dv]):
+      raw_gradients[k] = raw_gradients[k] * sign * scale * global_factor / dv_scl
+      k = k + 1
+  
   return raw_gradients
 
 # -------------------------------------------------------------------
