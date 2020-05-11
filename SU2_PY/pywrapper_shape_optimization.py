@@ -7,11 +7,50 @@ import pysu2
 import pysu2ad            # imports the SU2 AD wrapped module
 import os
 import shutil
+import copy
 
+def update_mesh(options, config, mpi_comm):
+  deform_todo = not config['DV_VALUE_NEW'] == config['DV_VALUE_OLD']
+  if deform_todo:
+    # setup mesh name
+    suffix = 'deform'
+    mesh_name = config['MESH_FILENAME']
+    meshname_suffixed = SU2.io.add_suffix( mesh_name , suffix )
+    config['MESH_OUT_FILENAME'] = meshname_suffixed
+    
+    dumpFilename = 'config_DEF.cfg'
+    config.dump(dumpFilename)
+    try:
+      SU2MeshDeformation = pysu2.CMeshDeformation(dumpFilename, mpi_comm)
+    except TypeError as exception:
+      print('A TypeError occured in pysu2.CDriver : ',exception)
+      if options.with_MPI == True:
+        print('ERROR : You are trying to initialize MPI with a serial build of the wrapper. Please, remove the --parallel option that is incompatible with a serial build.')
+      else:
+        print('ERROR : You are trying to launch a computation without initializing MPI but the wrapper has been built in parallel. Please add the --parallel option in order to initialize MPI for the wrapper.')
+      return
+    
+    SU2MeshDeformation.Run()
+    print ("SU2MeshDeformation successfully evaluated")
+    
+    # update DV_VALUE_OLD
+#     config.update({ 'MESH_FILENAME' : config['MESH_OUT_FILENAME'] , 
+#                     'DV_VALUE_OLD'  : config['DV_VALUE_NEW']      })
+    config.update({'DV_VALUE_OLD'  : config['DV_VALUE_NEW']})
+    
+  return
+  
 # -------------------------------------------------------------------
 #  Primal (Objective function(s)) 
 # -------------------------------------------------------------------
-def primal(options, config, mpi_comm):
+def primal(design_parameters, options, config, mpi_comm, current_iteration):
+  config['MATH_PROBLEM']  = 'DIRECT'
+  config.unpack_dvs(design_parameters)
+  # update mesh if design is changed
+  if(current_iteration > 0):
+    update_mesh(options, config, mpi_comm)
+    config['RESTART_SOL'] = 'YES'
+    
   # Initialize the corresponding driver of SU2, this includes solver preprocessing
   try:
     SU2Driver = pysu2.CSinglezoneDriver(options.filename, options.nZone, mpi_comm)
@@ -54,14 +93,19 @@ def primal(options, config, mpi_comm):
     sign  = SU2.io.get_objectiveSign(this_obj)
     
     func_vals_sum += funcs[this_obj] * sign * scale * global_factor
+    
+  current_iteration+=1
   
   return func_vals_sum
 
 # -------------------------------------------------------------------
 #  Adjoint
 # -------------------------------------------------------------------
-def adjoint(options, config, mpi_comm):
+def adjoint(options, config, mpi_comm, current_iteration):
   config['MATH_PROBLEM']  = 'DISCRETE_ADJOINT'
+  
+  if(current_iteration > 0):
+    config['RESTART_SOL'] = 'YES'
   
   dumpFilename = 'config_CFD_AD.cfg'
   config.dump(dumpFilename)
@@ -171,14 +215,34 @@ def main():
     comm = MPI.COMM_WORLD
   else:
     comm = 0 
+    
+  current_iteration = 0
+    
+  designparams = copy.deepcopy(config['DV_VALUE_NEW'])
 
   # PRIMAL
-  objective_values = primal(options, config, comm)
+  # iteration 0
+  objective_values = primal(designparams, options, config, comm, current_iteration)
   
-  gradients = adjoint(options, config, comm)
+  gradients = adjoint(options, config, comm, current_iteration)
   
-  print (objective_values)
-  print (gradients)
+  current_iteration += 1
+  
+  #print (objective_values)
+  #print (gradients)
+  
+  #propose new values of design parameters
+  config_read = SU2.io.Config("iteration2designs.cfg")
+  myx = config_read['DV_VALUE_NEW']
+  print (myx)
+  
+  objective_values = primal(myx, options, config, comm, current_iteration)
+  
+  gradients = adjoint(options, config, comm, current_iteration)
+  
+  current_iteration += 1
+  
+  #config.unpack_dvs(x)
 
 # -------------------------------------------------------------------
 #  Run Main Program
