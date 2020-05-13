@@ -8,17 +8,26 @@ import pysu2ad            # imports the SU2 AD wrapped module
 import os
 import shutil
 import copy
+from numpy import linalg
 
 def update_mesh(options, config, mpi_comm):
   deform_todo = not config['DV_VALUE_NEW'] == config['DV_VALUE_OLD']
   if deform_todo:
-    # setup mesh name
+    # for some reason, mesh deformation is done always in the initial mesh
+    mesh_name = config['MESH_FILENAME']
+    suffix = 'initial'
+    initial_meshname_suffixed = SU2.io.add_suffix( mesh_name , suffix )
+    # copy the initial mesh file over the current one to get ready for the mesh deformation
+    if os.path.exists(initial_meshname_suffixed):
+      shutil.copy( initial_meshname_suffixed , mesh_name )
+    
+    # setup output mesh name
     suffix = 'deform'
     mesh_name = config['MESH_FILENAME']
     meshname_suffixed = SU2.io.add_suffix( mesh_name , suffix )
     config['MESH_OUT_FILENAME'] = meshname_suffixed
     
-    dumpFilename = 'config_DEF.cfg'
+    dumpFilename = 'config.cfg'
     config.dump(dumpFilename)
     try:
       SU2MeshDeformation = pysu2.CMeshDeformation(dumpFilename, mpi_comm)
@@ -32,7 +41,9 @@ def update_mesh(options, config, mpi_comm):
     
     SU2MeshDeformation.Run()
     print ("SU2MeshDeformation successfully evaluated")
-    
+    # once the deformation is finished, rename the result
+    if os.path.exists(meshname_suffixed):
+      shutil.move( meshname_suffixed , mesh_name )
     # update DV_VALUE_OLD
 #     config.update({ 'MESH_FILENAME' : config['MESH_OUT_FILENAME'] , 
 #                     'DV_VALUE_OLD'  : config['DV_VALUE_NEW']      })
@@ -47,13 +58,18 @@ def primal(design_parameters, options, config, mpi_comm, current_iteration):
   config['MATH_PROBLEM']  = 'DIRECT'
   config.unpack_dvs(design_parameters)
   # update mesh if design is changed
+  dumpFilename = 'config.cfg'
   if(current_iteration > 0):
     update_mesh(options, config, mpi_comm)
     config['RESTART_SOL'] = 'YES'
+    config.dump(dumpFilename)
     
   # Initialize the corresponding driver of SU2, this includes solver preprocessing
   try:
-    SU2Driver = pysu2.CSinglezoneDriver(options.filename, options.nZone, mpi_comm)
+    if(current_iteration > 0):
+      SU2Driver = pysu2.CSinglezoneDriver(dumpFilename, options.nZone, mpi_comm)
+    else:
+      SU2Driver = pysu2.CSinglezoneDriver(options.filename, options.nZone, mpi_comm)
   except TypeError as exception:
     print('A TypeError occured in pysu2.CDriver : ',exception)
     if options.with_MPI == True:
@@ -226,10 +242,15 @@ def main():
   
   gradients = adjoint(options, config, comm, current_iteration)
   
-  current_iteration += 1
+  print("%5i %5i % 16.6E % 16.6E" % (current_iteration,current_iteration,
+                                               objective_values,linalg.norm(gradients)))
   
   #print (objective_values)
   #print (gradients)
+  
+  current_iteration += 1
+  
+
   
   #propose new values of design parameters
   config_read = SU2.io.Config("iteration2designs.cfg")
@@ -239,6 +260,27 @@ def main():
   objective_values = primal(myx, options, config, comm, current_iteration)
   
   gradients = adjoint(options, config, comm, current_iteration)
+  
+  #print (objective_values)
+  #print (gradients)
+  print("%5i %5i % 16.6E % 16.6E" % (current_iteration,current_iteration,
+                                               objective_values,linalg.norm(gradients)))
+  
+  current_iteration += 1
+  
+  #propose new values of design parameters
+  config_read = SU2.io.Config("iteration3designs.cfg")
+  myx = config_read['DV_VALUE_NEW']
+  print (myx)
+  
+  objective_values = primal(myx, options, config, comm, current_iteration)
+  
+  gradients = adjoint(options, config, comm, current_iteration)
+  
+  #print (objective_values)
+  #print (gradients)
+  print("%5i %5i % 16.6E % 16.6E" % (current_iteration,current_iteration,
+                                               objective_values,linalg.norm(gradients)))
   
   current_iteration += 1
   
