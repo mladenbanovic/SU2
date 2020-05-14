@@ -8,8 +8,9 @@ import pysu2ad            # imports the SU2 AD wrapped module
 import os
 import shutil
 import copy
-from numpy import linalg
+import numpy as np
 import sys
+from scipy.optimize import fmin_slsqp
 
 class OptHandle(object):
   def __init__(self, options, config, mpi_comm):
@@ -111,6 +112,7 @@ class OptHandle(object):
   #  Primal (Objective function(s)) 
   # -------------------------------------------------------------------
   def primal(self, design_parameters):
+    if isinstance(design_parameters, np.ndarray): design_parameters = design_parameters.tolist()
     self.config['MATH_PROBLEM']  = 'DIRECT'
     self.x0 = copy.deepcopy(design_parameters)
     self.config.unpack_dvs(design_parameters)
@@ -299,6 +301,22 @@ def main():
   current_iteration = 0
     
   designparams = copy.deepcopy(config['DV_VALUE_NEW'])
+  
+      # Run Optimizer
+  outputs = fmin_slsqp( x0             = optHandle.x0       ,
+                        func           = optHandle.primal   , 
+#                        f_eqcons       = None               , 
+#                        f_ieqcons      = None               ,
+                        fprime         = optHandle.adjoint  ,
+#                        fprime_eqcons  = None               , 
+#                        fprime_ieqcons = None               , 
+#                        args           = None               , 
+                        bounds         = optHandle.xbounds  ,
+                        iter           = optHandle.maxIter  ,
+                        iprint         = 2                  ,
+                        full_output    = True               ,
+                        acc            = optHandle.accu     ,
+                        epsilon        = optHandle.eps      )
 
   # PRIMAL
   # iteration 0
@@ -308,7 +326,7 @@ def main():
   #gradients = adjoint(options, config, comm, current_iteration)
   gradients = optHandle.adjoint(designparams)
   print("%5i %5i % 16.6E % 16.6E" % (current_iteration,current_iteration,
-                                               objective_values,linalg.norm(gradients)))
+                                               objective_values,np.linalg.norm(gradients)))
   
   #print (objective_values)
   #print (gradients)
@@ -329,7 +347,7 @@ def main():
   #print (objective_values)
   #print (gradients)
   print("%5i %5i % 16.6E % 16.6E" % (current_iteration,current_iteration,
-                                               objective_values,linalg.norm(gradients)))
+                                               objective_values,np.linalg.norm(gradients)))
   
   current_iteration += 1
   
@@ -345,7 +363,7 @@ def main():
   #print (objective_values)
   #print (gradients)
   print("%5i %5i % 16.6E % 16.6E" % (current_iteration,current_iteration,
-                                               objective_values,linalg.norm(gradients)))
+                                               objective_values,np.linalg.norm(gradients)))
   
   current_iteration += 1
   
