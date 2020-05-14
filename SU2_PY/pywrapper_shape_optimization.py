@@ -121,14 +121,13 @@ class OptHandle(object):
     if(self.currentIteration > 0):
       self.update_mesh()
       self.config['RESTART_SOL'] = 'YES'
-      self.config.dump(dumpFilename)
+    else:
+      self.config['RESTART_SOL'] = 'NO'
+    self.config.dump(dumpFilename)
       
     # Initialize the corresponding driver of SU2, this includes solver preprocessing
     try:
-      if(self.currentIteration > 0):
-        SU2Driver = pysu2.CSinglezoneDriver(dumpFilename, self.options.nZone, self.mpi_comm)
-      else:
-        SU2Driver = pysu2.CSinglezoneDriver(self.options.filename, self.options.nZone, self.mpi_comm)
+      SU2Driver = pysu2.CSinglezoneDriver(dumpFilename, self.options.nZone, self.mpi_comm)
     except TypeError as exception:
       print('A TypeError occured in pysu2.CDriver : ',exception)
       if self.options.with_MPI == True:
@@ -177,11 +176,14 @@ class OptHandle(object):
   #  Adjoint
   # -------------------------------------------------------------------
   def adjoint(self, design_parameters):
-    self.config['MATH_PROBLEM']  = 'DISCRETE_ADJOINT'
-    
     ### check if design parameters are changed, if so, run primal beforehand
-    ### TODO
-    ###
+    if isinstance(design_parameters, np.ndarray): design_parameters = design_parameters.tolist()
+    if (self.x0 != design_parameters):
+      self.primal(design_parameters)
+      
+    #continue with adjoint part
+      
+    self.config['MATH_PROBLEM']  = 'DISCRETE_ADJOINT'
     
     if(self.currentIteration > 1):
       self.config['RESTART_SOL'] = 'YES'
@@ -302,7 +304,7 @@ def main():
     
   designparams = copy.deepcopy(config['DV_VALUE_NEW'])
   
-      # Run Optimizer
+  # Run Optimizer
   outputs = fmin_slsqp( x0             = optHandle.x0       ,
                         func           = optHandle.primal   , 
 #                        f_eqcons       = None               , 
@@ -321,53 +323,12 @@ def main():
   # PRIMAL
   # iteration 0
   #objective_values = primal(designparams, options, config, comm, current_iteration)
-  objective_values = optHandle.primal(designparams)
+  #objective_values = optHandle.primal(designparams)
   
   #gradients = adjoint(options, config, comm, current_iteration)
-  gradients = optHandle.adjoint(designparams)
-  print("%5i %5i % 16.6E % 16.6E" % (current_iteration,current_iteration,
-                                               objective_values,np.linalg.norm(gradients)))
-  
-  #print (objective_values)
-  #print (gradients)
-  
-  current_iteration += 1
-  
-
-  
-  #propose new values of design parameters
-  config_read = SU2.io.Config("iteration2designs.cfg")
-  myx = config_read['DV_VALUE_NEW']
-  print (myx)
-  
-  objective_values = optHandle.primal(myx)
-  
-  gradients = optHandle.adjoint(myx)
-  
-  #print (objective_values)
-  #print (gradients)
-  print("%5i %5i % 16.6E % 16.6E" % (current_iteration,current_iteration,
-                                               objective_values,np.linalg.norm(gradients)))
-  
-  current_iteration += 1
-  
-  #propose new values of design parameters
-  config_read = SU2.io.Config("iteration3designs.cfg")
-  myx = config_read['DV_VALUE_NEW']
-  print (myx)
-  
-  #objective_values = primal(myx, options, config, comm, current_iteration)
-  
-  #gradients = adjoint(options, config, comm, current_iteration)
-  
-  #print (objective_values)
-  #print (gradients)
-  print("%5i %5i % 16.6E % 16.6E" % (current_iteration,current_iteration,
-                                               objective_values,np.linalg.norm(gradients)))
-  
-  current_iteration += 1
-  
-  #config.unpack_dvs(x)
+  #gradients = optHandle.adjoint(designparams)
+  #print("%5i %5i % 16.6E % 16.6E" % (current_iteration,current_iteration,
+                                              # objective_values,np.linalg.norm(gradients)))
 
 # -------------------------------------------------------------------
 #  Run Main Program
